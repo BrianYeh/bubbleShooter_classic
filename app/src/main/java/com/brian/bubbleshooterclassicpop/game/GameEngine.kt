@@ -5,8 +5,9 @@ import kotlin.random.Random
 
 class GameEngine(
     private val random: Random = Random(7),
+    initialState: GameState = GameState(),
 ) {
-    var state: GameState = GameState()
+    var state: GameState = initialState
         private set
 
     fun start(level: Int = 1) {

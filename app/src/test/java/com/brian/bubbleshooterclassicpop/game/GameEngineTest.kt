@@ -47,4 +47,121 @@ class GameEngineTest {
         assertEquals(shots - 1, engine.state.shotsRemaining)
         assertTrue(engine.state.flyingBubble != null)
     }
+
+    @Test
+    fun attachingThirdMatchingBubbleUpdatesScoreAndWinsWhenBoardClears() {
+        val placed = GridPosition(1, 0)
+        val engine = GameEngine(
+            random = Random(1),
+            initialState = GameState(
+                phase = GamePhase.Running,
+                board = bubbleMap(
+                    GridPosition(0, 0) to BubbleColor.Mint,
+                    GridPosition(0, 1) to BubbleColor.Mint,
+                ),
+                currentBubble = BubbleColor.Mint,
+                nextBubble = BubbleColor.Sky,
+                flyingBubble = FlyingBubble(
+                    position = collisionPointFor(placed),
+                    velocity = Vec2(0f, 0f),
+                    color = BubbleColor.Mint,
+                ),
+                shotsRemaining = 4,
+            ),
+        )
+
+        engine.tick(1f / 120f)
+
+        assertEquals(GamePhase.Won, engine.state.phase)
+        assertEquals(30, engine.state.score)
+        assertEquals(3, engine.state.lastPopped)
+        assertEquals(0, engine.state.lastDropped)
+        assertTrue(engine.state.board.isEmpty())
+        assertEquals(BubbleColor.Sky, engine.state.currentBubble)
+    }
+
+    @Test
+    fun droppedFloatingBubblesAddDropScore() {
+        val placed = GridPosition(1, 0)
+        val floating = GridPosition(2, 0)
+        val survivor = GridPosition(0, 3)
+        val engine = GameEngine(
+            random = Random(1),
+            initialState = GameState(
+                phase = GamePhase.Running,
+                board = bubbleMap(
+                    GridPosition(0, 0) to BubbleColor.Cherry,
+                    GridPosition(0, 1) to BubbleColor.Cherry,
+                    floating to BubbleColor.Sky,
+                    survivor to BubbleColor.Grape,
+                ),
+                currentBubble = BubbleColor.Cherry,
+                nextBubble = BubbleColor.Sun,
+                flyingBubble = FlyingBubble(
+                    position = collisionPointFor(placed),
+                    velocity = Vec2(0f, 0f),
+                    color = BubbleColor.Cherry,
+                ),
+                shotsRemaining = 4,
+            ),
+        )
+
+        engine.tick(1f / 120f)
+
+        assertEquals(GamePhase.Running, engine.state.phase)
+        assertEquals(50, engine.state.score)
+        assertEquals(3, engine.state.lastPopped)
+        assertEquals(1, engine.state.lastDropped)
+        assertEquals(setOf(survivor), engine.state.board.keys)
+    }
+
+    @Test
+    fun nonClearingAttachmentWithNoShotsRemainingLoses() {
+        val placed = GridPosition(1, 0)
+        val engine = GameEngine(
+            random = Random(1),
+            initialState = GameState(
+                phase = GamePhase.Running,
+                board = bubbleMap(GridPosition(0, 0) to BubbleColor.Cherry),
+                currentBubble = BubbleColor.Sky,
+                nextBubble = BubbleColor.Sun,
+                flyingBubble = FlyingBubble(
+                    position = collisionPointFor(placed),
+                    velocity = Vec2(0f, 0f),
+                    color = BubbleColor.Sky,
+                ),
+                shotsRemaining = 0,
+            ),
+        )
+
+        engine.tick(1f / 120f)
+
+        assertEquals(GamePhase.Lost, engine.state.phase)
+        assertEquals(0, engine.state.score)
+        assertTrue(engine.state.board.isNotEmpty())
+    }
+
+    @Test
+    fun pausePreventsShootingUntilResumed() {
+        val engine = GameEngine(Random(1))
+        engine.start(level = 1)
+        engine.togglePause()
+
+        engine.shoot()
+
+        assertEquals(GamePhase.Paused, engine.state.phase)
+        assertEquals(null, engine.state.flyingBubble)
+
+        engine.togglePause()
+        engine.shoot()
+
+        assertEquals(GamePhase.Running, engine.state.phase)
+        assertTrue(engine.state.flyingBubble != null)
+    }
+
+    private fun bubbleMap(vararg bubbles: Pair<GridPosition, BubbleColor>): Map<GridPosition, Bubble> =
+        bubbles.associate { (position, color) -> position to Bubble(position, color) }
+
+    private fun collisionPointFor(position: GridPosition): Vec2 =
+        GridMath.cellToCenter(position).let { center -> center.copy(y = center.y - 2f) }
 }

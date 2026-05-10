@@ -66,6 +66,8 @@ fun GameScreen(
     onPause: () -> Unit,
     onRestart: () -> Unit,
 ) {
+    val touchEnabled = state.phase == GamePhase.Running && state.flyingBubble == null
+
     LaunchedEffect(state.phase) {
         if (state.phase == GamePhase.Running) {
             var lastFrame = 0L
@@ -100,8 +102,8 @@ fun GameScreen(
                     .fillMaxSize()
                     .clip(RoundedCornerShape(8.dp))
                     .onSizeChanged { canvasSize = it }
-                    .pointerInput(canvasSize, state.phase, state.flyingBubble != null) {
-                        if (canvasSize.width > 0 && canvasSize.height > 0) {
+                    .pointerInput(canvasSize, touchEnabled) {
+                        if (touchEnabled && canvasSize.width > 0 && canvasSize.height > 0) {
                             awaitEachGesture {
                                 val down = awaitFirstDown()
                                 onAim(down.position.toLogical(canvasSize))
