@@ -223,7 +223,7 @@ private fun DrawScope.drawGame(state: GameState) {
     drawRect(color = Color(0xFFE0E9F7))
     withTransform({
         translate(left, top)
-        scale(scale, scale)
+        scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
     }) {
         drawRoundRect(
             brush = Brush.verticalGradient(
