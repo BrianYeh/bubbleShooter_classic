@@ -69,6 +69,25 @@ fun GameScreen(
     onRestart: () -> Unit,
 ) {
     val touchEnabled = state.phase == GamePhase.Running && state.flyingBubble == null
+    val feedbackKey = feedbackKey(state)
+    val feedbackText = feedbackMessage(state)
+    var feedbackProgress by remember { mutableStateOf(1f) }
+
+    LaunchedEffect(feedbackKey) {
+        if (feedbackKey == null) {
+            feedbackProgress = 1f
+            return@LaunchedEffect
+        }
+
+        val durationNanos = FEEDBACK_DURATION_MILLIS * 1_000_000L
+        val startNanos = withFrameNanos { it }
+        feedbackProgress = 0f
+        while (isActive && feedbackProgress < 1f) {
+            withFrameNanos { now ->
+                feedbackProgress = ((now - startNanos).toFloat() / durationNanos).coerceIn(0f, 1f)
+            }
+        }
+    }
 
     LaunchedEffect(state.phase) {
         if (state.phase == GamePhase.Running) {
@@ -129,11 +148,12 @@ fun GameScreen(
                         }
                     },
             ) {
-                drawGame(state)
+                drawGame(state, feedbackProgress)
             }
 
             FeedbackBanner(
-                state = state,
+                message = feedbackText,
+                progress = feedbackProgress,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 18.dp),
@@ -160,23 +180,41 @@ fun GameScreen(
 }
 
 @Composable
-private fun FeedbackBanner(state: GameState, modifier: Modifier = Modifier) {
-    val message = feedbackMessage(state) ?: return
+private fun FeedbackBanner(
+    message: String?,
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    if (message == null || progress >= 1f) return
+    val alpha = when {
+        progress < 0.42f -> 1f
+        else -> (1f - ((progress - 0.42f) / 0.58f)).coerceIn(0f, 1f)
+    }
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
-            .background(Color(0xCC17315B))
+            .background(Color(0xCC17315B).copy(alpha = 0.8f * alpha))
             .padding(horizontal = 18.dp, vertical = 9.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = message,
-            color = Color.White,
+            color = Color.White.copy(alpha = alpha),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
         )
     }
+}
+
+private fun feedbackKey(state: GameState): String? {
+    if (state.lastPopped > 0 || state.lastDropped > 0 || state.lastComboBonus > 0) {
+        return "clear:${state.score}:${state.shotsRemaining}:${state.lastPopped}:${state.lastDropped}:${state.lastComboBonus}:${state.comboStreak}"
+    }
+    if (state.missStreak > 0 && state.flyingBubble == null && state.phase == GamePhase.Running) {
+        return "miss:${state.shotsRemaining}:${state.missStreak}"
+    }
+    return null
 }
 
 private fun feedbackMessage(state: GameState): String? {
@@ -398,7 +436,7 @@ private fun starPath(center: Offset, radius: Float): Path {
     return path
 }
 
-private fun DrawScope.drawGame(state: GameState) {
+private fun DrawScope.drawGame(state: GameState, feedbackProgress: Float) {
     val scale = GridMath.scaleFor(size.width, size.height)
     val left = (size.width - GridMath.LOGICAL_WIDTH * scale) / 2f
     val top = (size.height - GridMath.LOGICAL_HEIGHT * scale) / 2f
@@ -442,7 +480,7 @@ private fun DrawScope.drawGame(state: GameState) {
                 radius = GridMath.BUBBLE_RADIUS,
             )
         }
-        drawClearBursts(state)
+        drawClearBursts(state, feedbackProgress)
         drawPowerUpDock()
         drawShooter(state)
     }
@@ -516,19 +554,21 @@ private fun DrawScope.drawAimGuide(angleDegrees: Float) {
 }
 
 
-private fun DrawScope.drawClearBursts(state: GameState) {
+private fun DrawScope.drawClearBursts(state: GameState, progress: Float) {
+    if (progress >= 1f) return
+    val alpha = (1f - progress).coerceIn(0f, 1f)
     state.lastClearedPositions.forEachIndexed { index, position ->
         val center = GridMath.cellToCenter(position)
         val offset = Offset(center.x, center.y)
-        val radius = GridMath.BUBBLE_RADIUS * (1.55f + (index % 3) * 0.08f)
+        val radius = GridMath.BUBBLE_RADIUS * (0.82f + progress * 1.25f + (index % 3) * 0.08f)
         drawCircle(
-            color = Color.White.copy(alpha = 0.72f),
+            color = Color.White.copy(alpha = 0.72f * alpha),
             radius = radius,
             center = offset,
             style = Stroke(width = 2.2f),
         )
         drawCircle(
-            color = Color(0xFFFFF06A).copy(alpha = 0.50f),
+            color = Color(0xFFFFF06A).copy(alpha = 0.50f * alpha),
             radius = radius * 0.72f,
             center = offset,
             style = Stroke(width = 1.4f),
@@ -537,13 +577,15 @@ private fun DrawScope.drawClearBursts(state: GameState) {
             val angle = spark * (PI.toFloat() / 2f) + (index * 0.35f)
             val sparkCenter = offset + Offset(cos(angle) * radius, sin(angle) * radius)
             drawCircle(
-                color = Color.White.copy(alpha = 0.78f),
-                radius = 2.2f,
+                color = Color.White.copy(alpha = 0.78f * alpha),
+                radius = 2.2f + progress * 1.4f,
                 center = sparkCenter,
             )
         }
     }
 }
+
+private const val FEEDBACK_DURATION_MILLIS = 520L
 
 private fun DrawScope.drawShooter(state: GameState) {
     val shooter = GridMath.shooterPosition

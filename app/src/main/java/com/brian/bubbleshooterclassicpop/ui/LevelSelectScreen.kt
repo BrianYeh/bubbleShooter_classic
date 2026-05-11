@@ -5,11 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -48,6 +50,7 @@ fun LevelSelectScreen(
                 ),
             )
             .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(18.dp),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -111,7 +114,7 @@ fun LevelSelectScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                (1..TOTAL_LEVELS).chunked(4).forEach { rowLevels ->
+                (1..TOTAL_LEVELS).chunked(5).forEach { rowLevels ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -124,11 +127,12 @@ fun LevelSelectScreen(
                                 onClick = { onLevelSelected(level) },
                             )
                         }
-                        repeat(4 - rowLevels.size) {
+                        repeat(5 - rowLevels.size) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(10.dp))
             }
         }
     }
@@ -143,8 +147,9 @@ private fun LevelTile(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(74.dp),
-        shape = RoundedCornerShape(20.dp),
+        modifier = modifier.height(68.dp),
+        shape = RoundedCornerShape(18.dp),
+        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
