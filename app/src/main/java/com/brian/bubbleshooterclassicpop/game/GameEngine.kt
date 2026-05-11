@@ -14,6 +14,14 @@ class GameEngine(
         state = createInitialState(level.coerceAtLeast(1))
     }
 
+    fun showStart() {
+        state = state.copy(phase = GamePhase.Start, flyingBubble = null)
+    }
+
+    fun showLevelSelect() {
+        state = state.copy(phase = GamePhase.LevelSelect, flyingBubble = null)
+    }
+
     fun restart() {
         start(state.level.coerceAtLeast(1))
     }

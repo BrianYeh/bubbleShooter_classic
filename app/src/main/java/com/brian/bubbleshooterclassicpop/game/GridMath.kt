@@ -15,7 +15,7 @@ object GridMath {
     const val BUBBLE_DIAMETER = BUBBLE_RADIUS * 2f
     const val TOP_PADDING = 34f
     const val MAX_ROWS = 18
-    const val SHOOT_SPEED = 430f
+    const val SHOOT_SPEED = 720f
     const val DANGER_LINE_Y = 500f
     const val MIN_AIM_DEGREES = 12f
     const val MAX_AIM_DEGREES = 168f

@@ -502,7 +502,7 @@ private fun DrawScope.drawAimGuide(angleDegrees: Float) {
             end = Offset(end.x, end.y),
             strokeWidth = 7f,
             cap = StrokeCap.Round,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f, 15f)),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 12f)),
         )
         drawLine(
             color = Color(0xFF2577FF).copy(alpha = 0.62f),
@@ -510,7 +510,7 @@ private fun DrawScope.drawAimGuide(angleDegrees: Float) {
             end = Offset(end.x, end.y),
             strokeWidth = 3.4f,
             cap = StrokeCap.Round,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f, 15f)),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 12f)),
         )
     }
 }

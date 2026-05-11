@@ -29,6 +29,11 @@ class GridMathTest {
     }
 
     @Test
+    fun shotSpeedFeelsArcadeFast() {
+        assertTrue(GridMath.SHOOT_SPEED >= 700f)
+    }
+
+    @Test
     fun aimAngleCannotPointDownward() {
         val targetBelowRight = Vec2(GridMath.shooterPosition.x + 40f, GridMath.shooterPosition.y + 60f)
         val targetBelowLeft = Vec2(GridMath.shooterPosition.x - 40f, GridMath.shooterPosition.y + 60f)

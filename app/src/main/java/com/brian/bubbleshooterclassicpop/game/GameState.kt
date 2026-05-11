@@ -2,6 +2,7 @@ package com.brian.bubbleshooterclassicpop.game
 
 enum class GamePhase {
     Start,
+    LevelSelect,
     Running,
     Paused,
     Won,

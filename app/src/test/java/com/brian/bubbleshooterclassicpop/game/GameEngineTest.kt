@@ -19,6 +19,18 @@ class GameEngineTest {
     }
 
     @Test
+    fun canOpenLevelSelectAndStartChosenLevel() {
+        val engine = GameEngine(Random(1))
+
+        engine.showLevelSelect()
+        assertEquals(GamePhase.LevelSelect, engine.state.phase)
+
+        engine.start(level = 12)
+        assertEquals(GamePhase.Running, engine.state.phase)
+        assertEquals(12, engine.state.level)
+    }
+
+    @Test
     fun emptyBoardIsWinCondition() {
         val engine = GameEngine(Random(1))
 

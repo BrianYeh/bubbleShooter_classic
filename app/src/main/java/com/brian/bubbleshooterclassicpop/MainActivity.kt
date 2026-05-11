@@ -15,6 +15,7 @@ import com.brian.bubbleshooterclassicpop.game.GamePhase
 import com.brian.bubbleshooterclassicpop.game.GameViewModel
 import com.brian.bubbleshooterclassicpop.ui.GameOverScreen
 import com.brian.bubbleshooterclassicpop.ui.GameScreen
+import com.brian.bubbleshooterclassicpop.ui.LevelSelectScreen
 import com.brian.bubbleshooterclassicpop.ui.StartScreen
 import com.brian.bubbleshooterclassicpop.ui.WinScreen
 
@@ -49,7 +50,11 @@ private fun BubbleShooterApp(viewModel: GameViewModel = viewModel()) {
             color = MaterialTheme.colorScheme.background,
         ) {
             when (state.phase) {
-                GamePhase.Start -> StartScreen(onPlay = viewModel::play)
+                GamePhase.Start -> StartScreen(onPlay = viewModel::showLevelSelect)
+                GamePhase.LevelSelect -> LevelSelectScreen(
+                    onLevelSelected = viewModel::playLevel,
+                    onBack = viewModel::showStart,
+                )
                 GamePhase.Running,
                 GamePhase.Paused,
                 -> GameScreen(

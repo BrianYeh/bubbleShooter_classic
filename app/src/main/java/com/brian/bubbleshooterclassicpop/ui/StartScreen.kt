@@ -73,7 +73,7 @@ fun StartScreen(onPlay: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(28.dp))
             Button(onClick = onPlay) {
-                Text(text = "Play")
+                Text(text = "Select Level")
             }
         }
     }

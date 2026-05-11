@@ -16,6 +16,21 @@ class GameViewModel : ViewModel() {
         sync()
     }
 
+    fun showStart() {
+        engine.showStart()
+        sync()
+    }
+
+    fun showLevelSelect() {
+        engine.showLevelSelect()
+        sync()
+    }
+
+    fun playLevel(level: Int) {
+        engine.start(level)
+        sync()
+    }
+
     fun restart() {
         engine.restart()
         sync()
