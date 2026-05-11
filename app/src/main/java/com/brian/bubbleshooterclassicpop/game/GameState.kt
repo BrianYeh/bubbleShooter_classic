@@ -20,4 +20,8 @@ data class GameState(
     val shotsRemaining: Int = 0,
     val lastPopped: Int = 0,
     val lastDropped: Int = 0,
+    val lastComboBonus: Int = 0,
+    val comboStreak: Int = 0,
+    val missStreak: Int = 0,
+    val lastClearedPositions: List<GridPosition> = emptyList(),
 )

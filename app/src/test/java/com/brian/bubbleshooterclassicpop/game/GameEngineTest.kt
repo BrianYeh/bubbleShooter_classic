@@ -116,6 +116,66 @@ class GameEngineTest {
     }
 
     @Test
+    fun comboBonusRewardsConsecutiveClears() {
+        val placed = GridPosition(1, 0)
+        val engine = GameEngine(
+            random = Random(1),
+            initialState = GameState(
+                phase = GamePhase.Running,
+                board = bubbleMap(
+                    GridPosition(0, 0) to BubbleColor.Mint,
+                    GridPosition(0, 1) to BubbleColor.Mint,
+                ),
+                currentBubble = BubbleColor.Mint,
+                nextBubble = BubbleColor.Sky,
+                flyingBubble = FlyingBubble(
+                    position = collisionPointFor(placed),
+                    velocity = Vec2(0f, 0f),
+                    color = BubbleColor.Mint,
+                ),
+                shotsRemaining = 4,
+                comboStreak = 1,
+            ),
+        )
+
+        engine.tick(1f / 120f)
+
+        assertEquals(2, engine.state.comboStreak)
+        assertEquals(GameEngine.COMBO_SCORE, engine.state.lastComboBonus)
+        assertEquals(30 + GameEngine.COMBO_SCORE, engine.state.score)
+        assertEquals(3, engine.state.lastClearedPositions.size)
+    }
+
+    @Test
+    fun missResetsComboAndIncrementsMissStreak() {
+        val placed = GridPosition(1, 0)
+        val engine = GameEngine(
+            random = Random(1),
+            initialState = GameState(
+                phase = GamePhase.Running,
+                board = bubbleMap(GridPosition(0, 0) to BubbleColor.Cherry),
+                currentBubble = BubbleColor.Sky,
+                nextBubble = BubbleColor.Sun,
+                flyingBubble = FlyingBubble(
+                    position = collisionPointFor(placed),
+                    velocity = Vec2(0f, 0f),
+                    color = BubbleColor.Sky,
+                ),
+                shotsRemaining = 4,
+                comboStreak = 2,
+            ),
+        )
+
+        engine.tick(1f / 120f)
+
+        assertEquals(GamePhase.Running, engine.state.phase)
+        assertEquals(0, engine.state.comboStreak)
+        assertEquals(1, engine.state.missStreak)
+        assertEquals(0, engine.state.lastComboBonus)
+        assertEquals(emptyList<GridPosition>(), engine.state.lastClearedPositions)
+    }
+
+    @Test
     fun nonClearingAttachmentWithNoShotsRemainingLoses() {
         val placed = GridPosition(1, 0)
         val engine = GameEngine(

@@ -132,6 +132,13 @@ fun GameScreen(
                 drawGame(state)
             }
 
+            FeedbackBanner(
+                state = state,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 18.dp),
+            )
+
             if (state.phase == GamePhase.Paused) {
                 Box(
                     modifier = Modifier
@@ -151,6 +158,41 @@ fun GameScreen(
         }
     }
 }
+
+@Composable
+private fun FeedbackBanner(state: GameState, modifier: Modifier = Modifier) {
+    val message = feedbackMessage(state) ?: return
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xCC17315B))
+            .padding(horizontal = 18.dp, vertical = 9.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = message,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+private fun feedbackMessage(state: GameState): String? {
+    val parts = buildList {
+        if (state.lastPopped > 0) add("POP x${state.lastPopped}")
+        if (state.lastDropped > 0) add("DROP x${state.lastDropped}")
+        if (state.comboStreak > 1) add("COMBO x${state.comboStreak}")
+        if (state.lastComboBonus > 0) add("+${state.lastComboBonus}")
+    }
+    if (parts.isNotEmpty()) return parts.joinToString("  •  ")
+    if (state.missStreak > 0 && state.flyingBubble == null && state.phase == GamePhase.Running) {
+        return "MISS ${state.missStreak}  •  MATCH 3+"
+    }
+    return null
+}
+
 
 @Composable
 private fun ScoreHeader(
@@ -400,6 +442,7 @@ private fun DrawScope.drawGame(state: GameState) {
                 radius = GridMath.BUBBLE_RADIUS,
             )
         }
+        drawClearBursts(state)
         drawPowerUpDock()
         drawShooter(state)
     }
@@ -469,6 +512,36 @@ private fun DrawScope.drawAimGuide(angleDegrees: Float) {
             cap = StrokeCap.Round,
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f, 15f)),
         )
+    }
+}
+
+
+private fun DrawScope.drawClearBursts(state: GameState) {
+    state.lastClearedPositions.forEachIndexed { index, position ->
+        val center = GridMath.cellToCenter(position)
+        val offset = Offset(center.x, center.y)
+        val radius = GridMath.BUBBLE_RADIUS * (1.55f + (index % 3) * 0.08f)
+        drawCircle(
+            color = Color.White.copy(alpha = 0.72f),
+            radius = radius,
+            center = offset,
+            style = Stroke(width = 2.2f),
+        )
+        drawCircle(
+            color = Color(0xFFFFF06A).copy(alpha = 0.50f),
+            radius = radius * 0.72f,
+            center = offset,
+            style = Stroke(width = 1.4f),
+        )
+        repeat(4) { spark ->
+            val angle = spark * (PI.toFloat() / 2f) + (index * 0.35f)
+            val sparkCenter = offset + Offset(cos(angle) * radius, sin(angle) * radius)
+            drawCircle(
+                color = Color.White.copy(alpha = 0.78f),
+                radius = 2.2f,
+                center = sparkCenter,
+            )
+        }
     }
 }
 

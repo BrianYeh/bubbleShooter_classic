@@ -52,6 +52,8 @@ class GameEngine(
             shotsRemaining = state.shotsRemaining - 1,
             lastPopped = 0,
             lastDropped = 0,
+            lastComboBonus = 0,
+            lastClearedPositions = emptyList(),
         )
     }
 
@@ -101,7 +103,11 @@ class GameEngine(
 
         val placedBoard = state.board + (snap to Bubble(position = snap, color = color))
         val result = MatchDetector.removeMatchesAndFloating(snap, placedBoard)
-        val gained = result.popped.size * POP_SCORE + result.dropped.size * DROP_SCORE
+        val clearedCount = result.popped.size + result.dropped.size
+        val clearedSomething = clearedCount > 0
+        val newComboStreak = if (clearedSomething) state.comboStreak + 1 else 0
+        val comboBonus = if (newComboStreak > 1) (newComboStreak - 1) * COMBO_SCORE else 0
+        val gained = result.popped.size * POP_SCORE + result.dropped.size * DROP_SCORE + comboBonus
         val won = hasWon(result.board)
         val lost = !won && hasLost(result.board, state.shotsRemaining)
 
@@ -118,6 +124,10 @@ class GameEngine(
             },
             lastPopped = result.popped.size,
             lastDropped = result.dropped.size,
+            lastComboBonus = comboBonus,
+            comboStreak = newComboStreak,
+            missStreak = if (clearedSomething) 0 else state.missStreak + 1,
+            lastClearedPositions = (result.popped + result.dropped).toList(),
         )
     }
 
@@ -151,5 +161,6 @@ class GameEngine(
     companion object {
         const val POP_SCORE = 10
         const val DROP_SCORE = 20
+        const val COMBO_SCORE = 25
     }
 }
