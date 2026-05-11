@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -85,7 +87,12 @@ fun GameScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7FAFF))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF65C7FF), Color(0xFFBFEFFF), Color(0xFFFFE5AA)),
+                ),
+            )
+            .statusBarsPadding()
             .padding(12.dp),
     ) {
         ScoreHeader(state = state, onPause = onPause, onRestart = onRestart)
@@ -100,7 +107,7 @@ fun GameScreen(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(22.dp))
                     .onSizeChanged { canvasSize = it }
                     .pointerInput(canvasSize, touchEnabled) {
                         if (touchEnabled && canvasSize.width > 0 && canvasSize.height > 0) {
@@ -129,7 +136,7 @@ fun GameScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(22.dp))
                         .background(Color(0xAA162033)),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -153,13 +160,28 @@ private fun ScoreHeader(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xAA17315B))
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            ArcadeMenuButton()
+            StarProgressBar(
+                progress = (state.score / 1_500f).coerceIn(0f, 1f),
+                modifier = Modifier.weight(1f),
+            )
+            ScorePill(score = state.score)
+        }
+        Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            StatText(label = "Score", value = state.score.toString())
-            StatText(label = "Level", value = state.level.toString())
-            StatText(label = "Shots", value = state.shotsRemaining.toString())
+            StatPill(label = "Level", value = state.level.toString(), modifier = Modifier.weight(1f))
+            StatPill(label = "Shots", value = state.shotsRemaining.toString(), modifier = Modifier.weight(1f))
             NextBubbleChip(color = state.nextBubble)
         }
         Row(
@@ -177,18 +199,119 @@ private fun ScoreHeader(
 }
 
 @Composable
-private fun StatText(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.Start) {
+private fun ArcadeMenuButton() {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF6BE4FF), Color(0xFF2B77D9)),
+                ),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(24.dp)) {
+            repeat(3) { index ->
+                drawLine(
+                    color = Color.White,
+                    start = Offset(size.width * 0.18f, size.height * (0.28f + index * 0.22f)),
+                    end = Offset(size.width * 0.82f, size.height * (0.28f + index * 0.22f)),
+                    strokeWidth = 3.2f,
+                    cap = StrokeCap.Round,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StarProgressBar(progress: Float, modifier: Modifier = Modifier) {
+    Canvas(
+        modifier = modifier
+            .height(34.dp)
+            .clip(RoundedCornerShape(18.dp)),
+    ) {
+        val trackHeight = size.height * 0.34f
+        val trackTop = size.height * 0.34f
+        val trackSize = Size(size.width, trackHeight)
+        drawRoundRect(
+            color = Color(0xFF0E2448).copy(alpha = 0.72f),
+            topLeft = Offset(0f, trackTop),
+            size = trackSize,
+            cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f),
+        )
+        drawRoundRect(
+            brush = Brush.horizontalGradient(listOf(Color(0xFFFFE66B), Color(0xFFFF9D42))),
+            topLeft = Offset(0f, trackTop),
+            size = Size(size.width * progress, trackHeight),
+            cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f),
+        )
+        listOf(0.22f, 0.50f, 0.78f).forEachIndexed { index, xFraction ->
+            val center = Offset(size.width * xFraction, size.height * 0.5f)
+            val filled = progress >= xFraction
+            drawPath(
+                path = starPath(center, size.height * 0.22f),
+                color = if (filled) Color(0xFFFFF06A) else Color.White.copy(alpha = 0.65f),
+            )
+            drawPath(
+                path = starPath(center, size.height * 0.22f),
+                color = Color(0xFF6B4B00).copy(alpha = 0.35f),
+                style = Stroke(width = 1.2f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScorePill(score: Int) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF9C7DFF), Color(0xFF3D73E6)),
+                ),
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.End,
+    ) {
         Text(
-            text = label,
-            color = Color(0xFF63708A),
-            style = MaterialTheme.typography.labelMedium,
+            text = "SCORE",
+            color = Color.White.copy(alpha = 0.78f),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = score.toString(),
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black,
+        )
+    }
+}
+
+@Composable
+private fun StatPill(label: String, value: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color.White.copy(alpha = 0.72f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label.uppercase(),
+            color = Color(0xFF45618C),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
         )
         Text(
             text = value,
-            color = Color(0xFF162033),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            color = Color(0xFF17315B),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black,
         )
     }
 }
@@ -196,16 +319,21 @@ private fun StatText(label: String, value: String) {
 @Composable
 private fun NextBubbleChip(color: BubbleColor) {
     Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color.White.copy(alpha = 0.78f))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "Next",
-            color = Color(0xFF63708A),
-            style = MaterialTheme.typography.labelMedium,
+            text = "NEXT",
+            color = Color(0xFF45618C),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.End,
         )
-        Canvas(modifier = Modifier.size(28.dp)) {
+        Canvas(modifier = Modifier.size(30.dp)) {
             drawBubble(
                 center = Vec2(size.width / 2f, size.height / 2f),
                 color = color,
@@ -215,31 +343,49 @@ private fun NextBubbleChip(color: BubbleColor) {
     }
 }
 
+private fun starPath(center: Offset, radius: Float): Path {
+    val path = Path()
+    val innerRadius = radius * 0.46f
+    repeat(10) { index ->
+        val angle = (-PI.toFloat() / 2f) + index * (PI.toFloat() / 5f)
+        val r = if (index % 2 == 0) radius else innerRadius
+        val point = Offset(center.x + cos(angle) * r, center.y + sin(angle) * r)
+        if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+    }
+    path.close()
+    return path
+}
+
 private fun DrawScope.drawGame(state: GameState) {
     val scale = GridMath.scaleFor(size.width, size.height)
     val left = (size.width - GridMath.LOGICAL_WIDTH * scale) / 2f
     val top = (size.height - GridMath.LOGICAL_HEIGHT * scale) / 2f
 
-    drawRect(color = Color(0xFFE0E9F7))
+    drawRect(
+        brush = Brush.verticalGradient(
+            colors = listOf(Color(0xFF79D8FF), Color(0xFFC7F4FF), Color(0xFFFFD98A)),
+        ),
+    )
     withTransform({
         translate(left, top)
         scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
     }) {
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFFEFF8FF), Color(0xFFEFFFF8), Color(0xFFFFF3D8)),
+                colors = listOf(Color(0xFF62C8FF), Color(0xFFC8F7FF), Color(0xFFFFD98A)),
                 startY = 0f,
                 endY = GridMath.LOGICAL_HEIGHT,
             ),
             size = Size(GridMath.LOGICAL_WIDTH, GridMath.LOGICAL_HEIGHT),
-            cornerRadius = CornerRadius(10f, 10f),
+            cornerRadius = CornerRadius(24f, 24f),
         )
+        drawSkyDecorations()
+        drawBoardGlow()
 
         drawDangerLine()
         if (state.phase == GamePhase.Running && state.flyingBubble == null) {
             drawAimGuide(state.aimAngleDegrees)
         }
-        drawShooter(state)
         state.board.values.forEach { bubble ->
             drawBubble(
                 center = GridMath.cellToCenter(bubble.position),
@@ -254,28 +400,74 @@ private fun DrawScope.drawGame(state: GameState) {
                 radius = GridMath.BUBBLE_RADIUS,
             )
         }
+        drawPowerUpDock()
+        drawShooter(state)
     }
+}
+
+private fun DrawScope.drawSkyDecorations() {
+    drawCircle(Color.White.copy(alpha = 0.10f), radius = 42f, center = Offset(312f, 118f))
+    drawCircle(Color.White.copy(alpha = 0.08f), radius = 30f, center = Offset(48f, 168f))
+    drawCloud(Offset(58f, 92f), 0.78f)
+    drawCloud(Offset(286f, 182f), 0.58f)
+}
+
+private fun DrawScope.drawCloud(origin: Offset, scale: Float) {
+    val color = Color.White.copy(alpha = 0.36f)
+    drawCircle(color, radius = 18f * scale, center = origin)
+    drawCircle(color, radius = 24f * scale, center = origin + Offset(22f * scale, -6f * scale))
+    drawCircle(color, radius = 17f * scale, center = origin + Offset(46f * scale, 2f * scale))
+    drawRoundRect(
+        color = color,
+        topLeft = origin + Offset(-12f * scale, 2f * scale),
+        size = Size(72f * scale, 22f * scale),
+        cornerRadius = CornerRadius(12f * scale, 12f * scale),
+    )
+}
+
+private fun DrawScope.drawBoardGlow() {
+    drawRoundRect(
+        color = Color.White.copy(alpha = 0.17f),
+        topLeft = Offset(8f, 16f),
+        size = Size(GridMath.LOGICAL_WIDTH - 16f, 402f),
+        cornerRadius = CornerRadius(24f, 24f),
+    )
+    drawRoundRect(
+        color = Color(0xFF1259A8).copy(alpha = 0.08f),
+        topLeft = Offset(8f, 16f),
+        size = Size(GridMath.LOGICAL_WIDTH - 16f, 402f),
+        cornerRadius = CornerRadius(24f, 24f),
+        style = Stroke(width = 2f),
+    )
 }
 
 private fun DrawScope.drawDangerLine() {
     drawLine(
-        color = Color(0xFFFF5C77).copy(alpha = 0.72f),
-        start = Offset(0f, GridMath.DANGER_LINE_Y),
-        end = Offset(GridMath.LOGICAL_WIDTH, GridMath.DANGER_LINE_Y),
-        strokeWidth = 2f,
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)),
+        color = Color(0xFFFF4F70).copy(alpha = 0.55f),
+        start = Offset(18f, GridMath.DANGER_LINE_Y),
+        end = Offset(GridMath.LOGICAL_WIDTH - 18f, GridMath.DANGER_LINE_Y),
+        strokeWidth = 3f,
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)),
     )
 }
 
 private fun DrawScope.drawAimGuide(angleDegrees: Float) {
     aimGuideSegments(angleDegrees).forEach { (start, end) ->
         drawLine(
-            color = Color(0xFF2E7BEF).copy(alpha = 0.38f),
+            color = Color.White.copy(alpha = 0.78f),
             start = Offset(start.x, start.y),
             end = Offset(end.x, end.y),
-            strokeWidth = 3f,
+            strokeWidth = 7f,
             cap = StrokeCap.Round,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 9f)),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f, 15f)),
+        )
+        drawLine(
+            color = Color(0xFF2577FF).copy(alpha = 0.62f),
+            start = Offset(start.x, start.y),
+            end = Offset(end.x, end.y),
+            strokeWidth = 3.4f,
+            cap = StrokeCap.Round,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f, 15f)),
         )
     }
 }
@@ -284,36 +476,101 @@ private fun DrawScope.drawShooter(state: GameState) {
     val shooter = GridMath.shooterPosition
     val radians = state.aimAngleDegrees * PI.toFloat() / 180f
     val barrelEnd = Vec2(
-        x = shooter.x + cos(radians) * 46f,
-        y = shooter.y - sin(radians) * 46f,
+        x = shooter.x + cos(radians) * 56f,
+        y = shooter.y - sin(radians) * 56f,
     )
 
     drawCircle(
-        color = Color(0xFF162033).copy(alpha = 0.10f),
-        radius = 38f,
-        center = Offset(shooter.x, shooter.y + 13f),
-    )
-    drawLine(
-        color = Color(0xFF293246),
-        start = Offset(shooter.x, shooter.y),
-        end = Offset(barrelEnd.x, barrelEnd.y),
-        strokeWidth = 14f,
-        cap = StrokeCap.Round,
+        color = Color(0xFF0B2A56).copy(alpha = 0.24f),
+        radius = 44f,
+        center = Offset(shooter.x, shooter.y + 17f),
     )
     drawCircle(
-        color = Color(0xFF293246),
-        radius = 24f,
+        brush = Brush.radialGradient(
+            colors = listOf(Color.White.copy(alpha = 0.75f), Color(0xFF51B5FF), Color(0xFF2469D7)),
+            center = Offset(shooter.x - 14f, shooter.y - 10f),
+            radius = 62f,
+        ),
+        radius = 33f,
         center = Offset(shooter.x, shooter.y + 12f),
+    )
+    drawLine(
+        color = Color(0xFF0F3269).copy(alpha = 0.82f),
+        start = Offset(shooter.x, shooter.y + 6f),
+        end = Offset(barrelEnd.x, barrelEnd.y),
+        strokeWidth = 19f,
+        cap = StrokeCap.Round,
+    )
+    drawLine(
+        color = Color.White.copy(alpha = 0.55f),
+        start = Offset(shooter.x - 2f, shooter.y + 2f),
+        end = Offset(barrelEnd.x - 2f, barrelEnd.y - 2f),
+        strokeWidth = 7f,
+        cap = StrokeCap.Round,
     )
 
     if (state.flyingBubble == null) {
         drawBubble(
             center = shooter,
             color = state.currentBubble,
-            radius = GridMath.BUBBLE_RADIUS,
+            radius = GridMath.BUBBLE_RADIUS * 1.18f,
         )
     }
 }
+
+private fun DrawScope.drawPowerUpDock() {
+    val dockTop = GridMath.LOGICAL_HEIGHT - 82f
+    val buttonSize = Size(50f, 36f)
+    val starts = listOf(34f, 91f, 219f, 276f)
+    val iconColors = listOf(Color(0xFFFF5C77), Color(0xFFFFC53D), Color(0xFF57D7FF), Color(0xFF9D7CFF))
+
+    drawRoundRect(
+        color = Color(0xFF14366F).copy(alpha = 0.24f),
+        topLeft = Offset(20f, dockTop - 6f),
+        size = Size(320f, 68f),
+        cornerRadius = CornerRadius(26f, 26f),
+    )
+    drawCircle(
+        color = Color.White.copy(alpha = 0.18f),
+        radius = 43f,
+        center = Offset(GridMath.shooterPosition.x, GridMath.shooterPosition.y + 10f),
+    )
+
+    starts.forEachIndexed { index, x ->
+        drawRoundRect(
+            brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.94f), Color(0xFFBFE9FF).copy(alpha = 0.86f))),
+            topLeft = Offset(x, dockTop + 9f),
+            size = buttonSize,
+            cornerRadius = CornerRadius(17f, 17f),
+        )
+        drawRoundRect(
+            color = Color(0xFF266BD8).copy(alpha = 0.36f),
+            topLeft = Offset(x, dockTop + 9f),
+            size = buttonSize,
+            cornerRadius = CornerRadius(17f, 17f),
+            style = Stroke(width = 2f),
+        )
+        val center = Offset(x + 20f, dockTop + 27f)
+        drawCircle(iconColors[index], radius = 11f, center = center)
+        drawCircle(Color.White.copy(alpha = 0.72f), radius = 3.8f, center = center - Offset(3.8f, 4.2f))
+        drawCircle(Color(0xFF1E4E9B), radius = 8f, center = Offset(x + 40f, dockTop + 17f))
+        drawLine(
+            color = Color.White,
+            start = Offset(x + 36.5f, dockTop + 17f),
+            end = Offset(x + 43.5f, dockTop + 17f),
+            strokeWidth = 2f,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = Color.White,
+            start = Offset(x + 40f, dockTop + 13.5f),
+            end = Offset(x + 40f, dockTop + 20.5f),
+            strokeWidth = 2f,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
 
 private fun DrawScope.drawBubble(
     center: Vec2,
@@ -324,32 +581,48 @@ private fun DrawScope.drawBubble(
     val shadow = color.shadowColor()
     val offset = Offset(center.x, center.y)
     drawCircle(
+        color = Color(0xFF0F3568).copy(alpha = 0.22f),
+        radius = radius * 1.05f,
+        center = offset + Offset(radius * 0.16f, radius * 0.24f),
+    )
+    drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(Color.White.copy(alpha = 0.92f), base, shadow),
-            center = offset - Offset(radius * 0.36f, radius * 0.42f),
-            radius = radius * 1.55f,
+            colors = listOf(Color.White.copy(alpha = 0.98f), base, shadow),
+            center = offset - Offset(radius * 0.40f, radius * 0.48f),
+            radius = radius * 1.78f,
         ),
         radius = radius,
         center = offset,
     )
     drawCircle(
-        color = Color.White.copy(alpha = 0.58f),
-        radius = radius * 0.26f,
-        center = offset - Offset(radius * 0.34f, radius * 0.36f),
+        color = Color.White.copy(alpha = 0.74f),
+        radius = radius * 0.27f,
+        center = offset - Offset(radius * 0.34f, radius * 0.38f),
     )
     drawCircle(
-        color = Color.White.copy(alpha = 0.28f),
+        color = Color.White.copy(alpha = 0.25f),
+        radius = radius * 0.16f,
+        center = offset + Offset(radius * 0.34f, radius * 0.32f),
+    )
+    drawCircle(
+        color = Color.White.copy(alpha = 0.48f),
         radius = radius,
         center = offset,
-        style = Stroke(width = 1.2f),
+        style = Stroke(width = 1.7f),
+    )
+    drawCircle(
+        color = shadow.copy(alpha = 0.45f),
+        radius = radius * 0.98f,
+        center = offset,
+        style = Stroke(width = 0.9f),
     )
 }
 
 private fun aimGuideSegments(angleDegrees: Float): List<Pair<Vec2, Vec2>> {
     val segments = mutableListOf<Pair<Vec2, Vec2>>()
-    var start = GridMath.shooterPosition
     var velocity = GridMath.velocityForAngle(angleDegrees)
-    var remainingLength = 520f
+    var start = GridMath.shooterPosition + velocity * (46f / GridMath.SHOOT_SPEED)
+    var remainingLength = 474f
 
     repeat(3) {
         val distanceToTop = if (velocity.y < 0f) {
